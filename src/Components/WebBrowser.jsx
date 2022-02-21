@@ -1,5 +1,4 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "../../node_modules/bootstrap/dist/css/bootstrap.min.css";
 import "../../node_modules/bootstrap-icons/font/bootstrap-icons.css";
 import SearchApi from "../Api/SearchApi";
@@ -11,38 +10,40 @@ export default function WebBrowser() {
   const [searchResults, SetsearchResults] = useState([]);
   const [subscriptionKey, SetsubscriptionKey] = useState("");
 
-  useEffect(() => {
-    getSubscriptionKey();
-  }, []);
+  const getResults = useCallback(
+    (query) => {
+      SearchApi.GetResults(query, subscriptionKey)
+        .then((response) => {
+          if (!response.hasOwnProperty("data")) {
+            SetsearchResults([]);
+            return;
+          }
+          const results = response.data?.webPages?.value;
+          SetsearchResults(results);
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    },
+    [subscriptionKey]
+  );
 
-  const getSubscriptionKey = () => {
-    //let key = subscriptionKey;
+  const getSubscriptionKey = useCallback(() => {
     let key = subsKey;
     while (key.length !== 32) {
       key = prompt("Enter Bing Search API subscription key:", "").trim();
     }
     SetsubscriptionKey(key);
     getResults();
-  };
+  }, [getResults]);
+
+  useEffect(() => {
+    getSubscriptionKey();
+  }, [getSubscriptionKey]);
 
   const handleSearchClick = () => {
     const query = queryInput.current.value;
     getResults(query);
-  };
-
-  const getResults = (query) => {
-    SearchApi.GetResults(query, subscriptionKey)
-      .then((response) => {
-        if (!response.hasOwnProperty("data")) {
-          SetsearchResults([]);
-          return;
-        }
-        const results = response.data?.webPages?.value;
-        SetsearchResults(results);
-      })
-      .catch((error) => {
-        alert(error.message);
-      });
   };
 
   return (
